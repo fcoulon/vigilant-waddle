@@ -3,29 +3,65 @@ var ctx = canvas.getContext('2d');
 var raf;
 var running = false;
 
-var ball = {
-  x: 100,
-  y: 100,
-  vx: 5,
-  vy: 1,
-  radius: 3,
-  color: 'black',
-  draw: function() {
+function Creature(size, posX, posY) {
+	this.vertebraSize = 10;
+	this.speed = 2;
+	
+	let head = new Ball(posX,posY);
+	this.backbone = [head];
+	
+	for (var i = 1; i < size; i++) {
+		let parent = this.backbone[i-1];
+		this.backbone.push(new Ball(parent.x - this.vertebraSize, posY));
+	}
+	
+	this.draw = function() {
+		for (var i = 0; i < size; i++) {
+			var point = this.backbone[i];
+			point.draw();
+		}
+	};
+	
+	this.move = function() {
+		let parent = target;
+		for (var i = 0; i < size; i++) {
+			
+			let point = this.backbone[i];
+			let dist = point.dist(parent);
+			
+			point.vx = (parent.x - point.x) / dist * this.speed;
+			point.vy = (parent.y - point.y) / dist * this.speed;
+			
+			if(dist - this.speed > this.vertebraSize) {
+				point.x += point.vx;
+				point.y += point.vy;
+			}
+			
+			parent = point;
+		}
+	};
+};
+
+function Ball(x,y) {
+  this.x = x;
+  this.y = y;
+  this.vx = 0;
+  this.vy = 0;
+  this.radius = 3;
+  this.color = 'black';
+  this.draw = function() {
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2, true);
     ctx.closePath();
     ctx.fillStyle = this.color;
     ctx.fill();
-  }
+  };
+  this.dist = function(pointB) {
+	return Math.sqrt((this.x - pointB.x) * (this.x - pointB.x) + (this.y - pointB.y) * (this.y - pointB.y));
+  };
 };
 
-var ball2 = Object.create(ball);
-ball2.x = 80;
-ball2.y = 100;
-
-var ball3 = Object.create(ball);
-ball3.x = 60;
-ball3.y = 100;
+var bestiau = new Creature(5,150,150);
 
 var target = {
 	x : 300,
@@ -38,45 +74,10 @@ function clear() {
 
 function draw() {
 	
-	var size = Math.sqrt((ball.x - target.x) * (ball.x - target.x) + (ball.y - target.y) * (ball.y - target.y));
-	var size2 = Math.sqrt((ball.x - ball2.x) * (ball.x - ball2.x) + (ball.y - ball2.y) * (ball.y - ball2.y));
-	var size3 = Math.sqrt((ball2.x - ball3.x) * (ball2.x - ball3.x) + (ball2.y - ball3.y) * (ball2.y - ball3.y));
-	var speed = 2;
-	
-	ball.vx = (target.x - ball.x) / size * speed;
-	ball.vy = (target.y - ball.y) / size * speed;
-	
-	ball2.vx = (ball.x - ball2.x) / size2 * speed;
-	ball2.vy = (ball.y - ball2.y) / size2 * speed;
-	
-	ball3.vx = (ball2.x - ball3.x) / size3 * speed;
-	ball3.vy = (ball2.y - ball3.y) / size3 * speed;
-	
+  bestiau.move();
   clear();
-  ball.draw();
-  ball2.draw();
-  ball3.draw();
+  bestiau.draw();
   
-  ball.x += ball.vx;
-  ball.y += ball.vy;
-  
-  if(size2 > 20) {
-	  ball2.x += ball2.vx;
-	  ball2.y += ball2.vy;
-  }
-  
-  if(size3 > 20) {
-	  ball3.x += ball3.vx;
-	  ball3.y += ball3.vy;
-  }
-
-  if (ball.y + ball.vy > canvas.height || ball.y + ball.vy < 0) {
-    ball.vy = -ball.vy;
-  }
-  if (ball.x + ball.vx > canvas.width || ball.x + ball.vx < 0) {
-    ball.vx = -ball.vx;
-  }
-
   raf = window.requestAnimationFrame(draw);
 }
 
