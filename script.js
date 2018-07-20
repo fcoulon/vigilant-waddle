@@ -4,22 +4,45 @@ var raf;
 var running = false;
 
 function Creature(size, posX, posY) {
-	this.vertebraSize = 10;
-	this.speed = 2;
 	
-	let head = new Ball(posX,posY);
-	this.backbone = [head];
-	
-	for (var i = 1; i < size; i++) {
-		let parent = this.backbone[i-1];
-		this.backbone.push(new Ball(parent.x - this.vertebraSize, posY));
-	}
+	this.init = function() {
+		this.vertebraSize = 10;
+		this.speed = 2;
+		this.armSize = 20;
+		this.armSpeed = 0.5;
+		
+		if(size < 4) {
+			size = 4;
+		}
+		
+		let head = new Ball(posX,posY);
+		this.backbone = [head];
+		
+		for (var i = 1; i < size; i++) {
+			let parent = this.backbone[i-1];
+			this.backbone.push(new Ball(parent.x - this.vertebraSize, posY));
+		}
+		
+		this.leftHand = new Ball(this.leftHandTarget().x, this.leftHandTarget().y);
+		this.isMovingLeftHand =  false;
+		this.rightHand = new Ball(this.rightHandTarget().x-this.armSize, this.rightHandTarget().y);
+		this.isMovingRightHand =  true;
+		this.leftFoot = new Ball(this.leftFootTarget().x, this.leftFootTarget().y);
+		this.isMovingLeftFoot =  true;
+		this.rightFoot = new Ball(this.rightFootTarget().x-this.armSize, this.rightFootTarget().y);
+		this.isMovingRightFoot =  false;
+	};
 	
 	this.draw = function() {
 		for (var i = 0; i < size; i++) {
 			var point = this.backbone[i];
 			point.draw();
 		}
+		
+		this.leftHand.draw();
+		this.rightHand.draw();
+		this.leftFoot.draw();
+		this.rightFoot.draw();
 	};
 	
 	this.move = function() {
@@ -39,7 +62,62 @@ function Creature(size, posX, posY) {
 			
 			parent = point;
 		}
+		
+		this.isMovingLeftHand = this.moveHand(this.leftHand,this.leftHandTarget(),this.isMovingLeftHand);
+		this.isMovingRightHand = this.moveHand(this.rightHand,this.rightHandTarget(),this.isMovingRightHand);
+		this.isMovingLeftFoot = this.moveHand(this.leftFoot,this.leftFootTarget(),this.isMovingLeftFoot);
+		this.isMovingRightFoot = this.moveHand(this.rightFoot,this.rightFootTarget(),this.isMovingRightFoot);
 	};
+	
+	this.moveHand = function(hand, target, isMoving) {
+		let dist = hand.dist(target);
+		let speed = this.speed + this.armSpeed;
+		if(dist > this.armSize) {
+			isMoving = true;
+		}
+		else if(dist <= this.speed + this.armSpeed) {
+			isMoving = false;
+		}
+		
+		if(isMoving) {
+			hand.vx = (target.x - hand.x) / dist * speed;
+			hand.vy = (target.y - hand.y) / dist * speed;
+			hand.x += hand.vx;
+			hand.y += hand.vy;
+		}
+		
+		return isMoving;
+	}
+	
+	this.leftHandTarget = function() {
+		 return {
+			 x : this.backbone[1].x +this.backbone[1].vy*4,
+			 y : this.backbone[1].y - this.backbone[1].vx*4
+		 };
+	};
+	
+	this.rightHandTarget = function() {
+		 return {
+			 x : this.backbone[1].x -this.backbone[1].vy*4,
+			 y : this.backbone[1].y + this.backbone[1].vx*4
+		 };
+	};
+	
+	this.leftFootTarget = function() {
+		 return {
+			 x : this.backbone[3].x +this.backbone[3].vy*4,
+			 y : this.backbone[3].y - this.backbone[3].vx*4
+		 };
+	};
+	
+	this.rightFootTarget = function() {
+		 return {
+			 x : this.backbone[3].x -this.backbone[3].vy*4,
+			 y : this.backbone[3].y + this.backbone[3].vx*4
+		 };
+	};
+	
+	this.init();
 };
 
 function Ball(x,y) {
@@ -61,7 +139,7 @@ function Ball(x,y) {
   };
 };
 
-var bestiau = new Creature(5,150,150);
+var bestiau = new Creature(7,150,150);
 
 var target = {
 	x : 300,
