@@ -7,12 +7,12 @@ function Creature(size, posX, posY) {
 	
 	this.init = function() {
 		this.vertebraSize = 10;
-		this.speed = 2;
-		this.armSize = 20;
-		this.armSpeed = 0.5;
+		this.speed = 1;
+		this.armSize = this.vertebraSize * 2.5;
+		this.armSpeed = 5;
 		
-		if(size < 4) {
-			size = 4;
+		if(size < 5) {
+			size = 5;
 		}
 		
 		let head = new Ball(posX,posY);
@@ -39,10 +39,31 @@ function Creature(size, posX, posY) {
 			point.draw();
 		}
 		
+		ctx.beginPath();
+		ctx.moveTo(this.backbone[0].x, this.backbone[0].y);
+		for (var i = 0; i < size; i++) {
+			var point = this.backbone[i];
+			ctx.lineTo(point.x, point.y);
+		}
+		ctx.stroke();
+		
 		this.leftHand.draw();
 		this.rightHand.draw();
 		this.leftFoot.draw();
 		this.rightFoot.draw();
+		
+		ctx.beginPath();
+		ctx.moveTo(this.leftHand.x, this.leftHand.y);
+		ctx.lineTo(this.backbone[2].x, this.backbone[2].y);
+		ctx.lineTo(this.rightHand.x, this.rightHand.y);
+		ctx.stroke();
+		
+		ctx.beginPath();
+		ctx.moveTo(this.leftFoot.x, this.leftFoot.y);
+		ctx.lineTo(this.backbone[5].x, this.backbone[5].y);
+		ctx.lineTo(this.rightFoot.x, this.rightFoot.y);
+		ctx.stroke();
+		
 	};
 	
 	this.move = function() {
@@ -90,30 +111,31 @@ function Creature(size, posX, posY) {
 	}
 	
 	this.leftHandTarget = function() {
+		console.log(this.backbone[1].vy);
 		 return {
-			 x : this.backbone[1].x +this.backbone[1].vy*4,
-			 y : this.backbone[1].y - this.backbone[1].vx*4
+			 x : this.backbone[0].x +this.backbone[0].vy*8,
+			 y : this.backbone[0].y - this.backbone[0].vx*8
 		 };
 	};
 	
 	this.rightHandTarget = function() {
 		 return {
-			 x : this.backbone[1].x -this.backbone[1].vy*4,
-			 y : this.backbone[1].y + this.backbone[1].vx*4
+			 x : this.backbone[0].x -this.backbone[0].vy*8,
+			 y : this.backbone[0].y + this.backbone[0].vx*8
 		 };
 	};
 	
 	this.leftFootTarget = function() {
 		 return {
-			 x : this.backbone[3].x +this.backbone[3].vy*4,
-			 y : this.backbone[3].y - this.backbone[3].vx*4
+			 x : this.backbone[3].x +this.backbone[3].vy*8,
+			 y : this.backbone[3].y - this.backbone[3].vx*8
 		 };
 	};
 	
 	this.rightFootTarget = function() {
 		 return {
-			 x : this.backbone[3].x -this.backbone[3].vy*4,
-			 y : this.backbone[3].y + this.backbone[3].vx*4
+			 x : this.backbone[3].x -this.backbone[3].vy*8,
+			 y : this.backbone[3].y + this.backbone[3].vx*8
 		 };
 	};
 	
@@ -125,7 +147,7 @@ function Ball(x,y) {
   this.y = y;
   this.vx = 0;
   this.vy = 0;
-  this.radius = 3;
+  this.radius = 2;
   this.color = 'black';
   this.draw = function() {
     ctx.beginPath();
@@ -139,7 +161,7 @@ function Ball(x,y) {
   };
 };
 
-var bestiau = new Creature(7,150,150);
+var bestiau = new Creature(9,150,150);
 
 var target = {
 	x : 300,
