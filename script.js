@@ -9,41 +9,42 @@ function Creature(size, posX, posY) {
 		this.vertebraSize = 10;
 		this.speed = 1;
 		this.armSize = this.vertebraSize * 2.5;
+		this.maxTargetDist = this.armSize;
 		this.armSpeed = 5;
 		
 		if(size < 5) {
 			size = 5;
 		}
 		
-		let head = new Ball(posX,posY);
+		let head = new Vertebra(posX,posY,null);
 		this.backbone = [head];
 		
 		for (var i = 1; i < size; i++) {
 			let parent = this.backbone[i-1];
-			this.backbone.push(new Ball(parent.x - this.vertebraSize, posY));
+			this.backbone.push(new Vertebra(parent.center.x - this.vertebraSize, posY,parent));
 		}
 		
-		this.leftHand = new Ball(this.leftHandTarget().x, this.leftHandTarget().y);
+		this.leftHand = new Vertebra(this.leftHandTarget().x, this.leftHandTarget().y,this.backbone[2]);
+		this.leftFoot = new Vertebra(this.leftFootTarget().x, this.leftFootTarget().y,this.backbone[5]);
+		this.rightHand = new Vertebra(this.rightHandTarget().x, this.rightHandTarget().y,this.backbone[2]);
+		this.rightFoot = new Vertebra(this.rightFootTarget().x, this.rightFootTarget().y,this.backbone[5]);
 		this.isMovingLeftHand =  false;
-		this.rightHand = new Ball(this.rightHandTarget().x-this.armSize, this.rightHandTarget().y);
 		this.isMovingRightHand =  true;
-		this.leftFoot = new Ball(this.leftFootTarget().x, this.leftFootTarget().y);
 		this.isMovingLeftFoot =  true;
-		this.rightFoot = new Ball(this.rightFootTarget().x-this.armSize, this.rightFootTarget().y);
 		this.isMovingRightFoot =  false;
 	};
 	
 	this.draw = function() {
 		for (var i = 0; i < size; i++) {
-			var point = this.backbone[i];
+			let point = this.backbone[i];
 			point.draw();
 		}
 		
 		ctx.beginPath();
-		ctx.moveTo(this.backbone[0].x, this.backbone[0].y);
+		ctx.moveTo(this.backbone[0].center.x, this.backbone[0].center.y);
 		for (var i = 0; i < size; i++) {
-			var point = this.backbone[i];
-			ctx.lineTo(point.x, point.y);
+			let point = this.backbone[i];
+			ctx.lineTo(point.center.x, point.center.y);
 		}
 		ctx.stroke();
 		
@@ -53,15 +54,15 @@ function Creature(size, posX, posY) {
 		this.rightFoot.draw();
 		
 		ctx.beginPath();
-		ctx.moveTo(this.leftHand.x, this.leftHand.y);
-		ctx.lineTo(this.backbone[2].x, this.backbone[2].y);
-		ctx.lineTo(this.rightHand.x, this.rightHand.y);
+		ctx.moveTo(this.leftHand.center.x, this.leftHand.center.y);
+		ctx.lineTo(this.backbone[2].center.x, this.backbone[2].center.y);
+		ctx.lineTo(this.rightHand.center.x, this.rightHand.center.y);
 		ctx.stroke();
 		
 		ctx.beginPath();
-		ctx.moveTo(this.leftFoot.x, this.leftFoot.y);
-		ctx.lineTo(this.backbone[5].x, this.backbone[5].y);
-		ctx.lineTo(this.rightFoot.x, this.rightFoot.y);
+		ctx.moveTo(this.leftFoot.center.x, this.leftFoot.center.y);
+		ctx.lineTo(this.backbone[5].center.x, this.backbone[5].center.y);
+		ctx.lineTo(this.rightFoot.center.x, this.rightFoot.center.y);
 		ctx.stroke();
 		
 	};
@@ -70,18 +71,19 @@ function Creature(size, posX, posY) {
 		let parent = target;
 		for (var i = 0; i < size; i++) {
 			
-			let point = this.backbone[i];
-			let dist = point.dist(parent);
+			let node = this.backbone[i];
+			let dist = Vector.distance(node.center, parent);
 			
-			point.vx = (parent.x - point.x) / dist * this.speed;
-			point.vy = (parent.y - point.y) / dist * this.speed;
+			let vertebra = new Vector(parent.x - node.center.x, parent.y - node.center.y);
+			vertebra.resize(this.speed);
+			node.direction = vertebra;
 			
 			if(dist - this.speed > this.vertebraSize) {
-				point.x += point.vx;
-				point.y += point.vy;
+				node.center.x += node.direction.x;
+				node.center.y += node.direction.y;
 			}
 			
-			parent = point;
+			parent = node.center;
 		}
 		
 		this.isMovingLeftHand = this.moveHand(this.leftHand,this.leftHandTarget(),this.isMovingLeftHand);
@@ -91,89 +93,86 @@ function Creature(size, posX, posY) {
 	};
 	
 	this.moveHand = function(hand, target, isMoving) {
-		let dist = hand.dist(target);
+		let dist = Vector.distance(hand.center, target);
+		
 		let speed = this.speed + this.armSpeed;
-		if(dist > this.armSize) {
+		if(dist > this.maxTargetDist) {
 			isMoving = true;
 		}
-		else if(dist <= this.speed + this.armSpeed) {
+		else if(dist <= speed) {
 			isMoving = false;
 		}
 		
 		if(isMoving) {
-			hand.vx = (target.x - hand.x) / dist * speed;
-			hand.vy = (target.y - hand.y) / dist * speed;
-			hand.x += hand.vx;
-			hand.y += hand.vy;
+			let dir = new Vector(target.x - hand.center.x, target.y - hand.center.y);
+			dir.resize(speed);
+			hand.direction = dir;
+
+			hand.center.x += hand.direction.x;
+			hand.center.y += hand.direction.y;
 		}
 		
 		return isMoving;
 	}
 	
 	this.leftHandTarget = function() {
-		console.log(this.backbone[1].vy);
-		 return {
-			 x : this.backbone[0].x +this.backbone[0].vy*8,
-			 y : this.backbone[0].y - this.backbone[0].vx*8
-		 };
+		let vertebraDir = this.backbone[2].direction;
+		let armDir = new Vector(vertebraDir.x, vertebraDir.y);
+		armDir.rotate(-Math.PI/4);
+		armDir.resize(this.armSize);
+		return armDir.translate(this.backbone[2].center);
 	};
 	
 	this.rightHandTarget = function() {
-		 return {
-			 x : this.backbone[0].x -this.backbone[0].vy*8,
-			 y : this.backbone[0].y + this.backbone[0].vx*8
-		 };
+		let vertebraDir = this.backbone[2].direction;
+		let armDir = new Vector(vertebraDir.x, vertebraDir.y);
+		armDir.rotate(Math.PI/4);
+		armDir.resize(this.armSize);
+		return armDir.translate(this.backbone[2].center);
 	};
 	
 	this.leftFootTarget = function() {
-		 return {
-			 x : this.backbone[3].x +this.backbone[3].vy*8,
-			 y : this.backbone[3].y - this.backbone[3].vx*8
-		 };
+		let vertebraDir = this.backbone[5].direction;
+		let armDir = new Vector(vertebraDir.x, vertebraDir.y);
+		armDir.rotate(-Math.PI/4);
+		armDir.resize(this.armSize);
+		return armDir.translate(this.backbone[5].center);
 	};
 	
 	this.rightFootTarget = function() {
-		 return {
-			 x : this.backbone[3].x -this.backbone[3].vy*8,
-			 y : this.backbone[3].y + this.backbone[3].vx*8
-		 };
+		let vertebraDir = this.backbone[5].direction;
+		let armDir = new Vector(vertebraDir.x, vertebraDir.y);
+		armDir.rotate(Math.PI/4);
+		armDir.resize(this.armSize);
+		return armDir.translate(this.backbone[5].center);
 	};
 	
 	this.init();
 };
 
-function Ball(x,y) {
-  this.x = x;
-  this.y = y;
-  this.vx = 0;
-  this.vy = 0;
+function Vertebra(x,y,parent) {
+  this.center = new Point(x,y);
+  this.parent = parent;
+  this.direction = new Vector(0,0);
   this.radius = 2;
   this.color = 'black';
   this.draw = function() {
     ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2, true);
+    ctx.arc(this.center.x, this.center.y, this.radius, 0, Math.PI*2, true);
     ctx.closePath();
     ctx.fillStyle = this.color;
     ctx.fill();
   };
-  this.dist = function(pointB) {
-	return Math.sqrt((this.x - pointB.x) * (this.x - pointB.x) + (this.y - pointB.y) * (this.y - pointB.y));
-  };
 };
 
 var bestiau = new Creature(9,150,150);
-
-var target = {
-	x : 300,
-	y : 300
-};
+var target = new Point(300,300);
 
 function clear() {
   ctx.clearRect(0,0, canvas.width, canvas.height);
 }
 
 function draw() {
-	
   bestiau.move();
   clear();
   bestiau.draw();
