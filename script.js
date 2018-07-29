@@ -9,7 +9,8 @@ function Creature(size, posX, posY) {
 		this.vertebraSize = 10;
 		this.speed = 1;
 		this.armSize = this.vertebraSize * 2.5;
-		this.maxTargetDist = this.armSize;
+		this.handSize = this.armSize / 2; 
+		this.maxTargetDist = 40;
 		this.armSpeed = 5;
 		
 		if(size < 5) {
@@ -53,19 +54,44 @@ function Creature(size, posX, posY) {
 		this.leftFoot.draw();
 		this.rightFoot.draw();
 		
-		ctx.beginPath();
-		ctx.moveTo(this.leftHand.center.x, this.leftHand.center.y);
-		ctx.lineTo(this.backbone[2].center.x, this.backbone[2].center.y);
-		ctx.lineTo(this.rightHand.center.x, this.rightHand.center.y);
-		ctx.stroke();
-		
-		ctx.beginPath();
-		ctx.moveTo(this.leftFoot.center.x, this.leftFoot.center.y);
-		ctx.lineTo(this.backbone[5].center.x, this.backbone[5].center.y);
-		ctx.lineTo(this.rightFoot.center.x, this.rightFoot.center.y);
-		ctx.stroke();
+		this.drawLeftMember(this.leftHand,this.leftHand.parent);
+		this.drawRightMember(this.rightHand,this.rightHand.parent);
+		this.drawLeftMember(this.leftFoot,this.leftFoot.parent);
+		this.drawRightMember(this.rightFoot,this.rightFoot.parent);
 		
 	};
+
+	this.drawLeftMember = function(hand, parent) {
+		let link = new Vector(hand.center.x-parent.center.x, hand.center.y-parent.center.y);
+		let linkSize = link.size();
+		let angle = Math.asin((linkSize/3*2) / (this.armSize/2));
+		let otherAngle = Math.PI - Math.PI/2 - angle;
+		link.rotate(-otherAngle);
+		link.resize(this.armSize/2);
+		let elbow = link.translate(parent.center);
+
+		ctx.beginPath();
+		ctx.moveTo(hand.center.x, hand.center.y);
+		ctx.lineTo(elbow.x, elbow.y);
+		ctx.lineTo(parent.center.x, parent.center.y);
+		ctx.stroke();
+	}
+
+	this.drawRightMember = function(hand, parent) {
+		let link = new Vector(hand.center.x-parent.center.x, hand.center.y-parent.center.y);
+		let linkSize = link.size();
+		let angle = Math.asin((linkSize/3*2) / (this.armSize/2));
+		let otherAngle = Math.PI - Math.PI/2 - angle;
+		link.rotate(otherAngle);
+		link.resize(this.armSize/2);
+		let elbow = link.translate(parent.center);
+
+		ctx.beginPath();
+		ctx.moveTo(hand.center.x, hand.center.y);
+		ctx.lineTo(elbow.x, elbow.y);
+		ctx.lineTo(parent.center.x, parent.center.y);
+		ctx.stroke();
+	}
 	
 	this.move = function() {
 		let parent = target;
